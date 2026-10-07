@@ -113,6 +113,7 @@ app.get(['/', ...PAGES.map((p) => `/${p}`), ...PAGES.map((p) => `/${p}.html`)], 
   res.sendFile(pageFile(name));
 });
 
+app.use('/uploads', express.static(config.uploadsDir, { maxAge: config.production ? '7d' : 0 }));
 app.use(express.static(path.join(config.root, 'public'), { index: false, maxAge: config.production ? '1h' : 0 }));
 
 app.use((_req, _res, next) => next(new HttpError(404, 'Not found.')));

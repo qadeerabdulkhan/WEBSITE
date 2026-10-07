@@ -18,7 +18,8 @@ export const config = {
   // Public base URL, used to build payment gateway return URLs.
   baseUrl: (env.BASE_URL || `http://localhost:${Number(env.PORT) || 3000}`).replace(/\/$/, ''),
   dbFile: env.DB_FILE || path.join(root, 'data', 'zaqa.db'),
-  uploadsDir: path.join(root, 'public', 'uploads'),
+  // Keep uploads on persistent storage in production (e.g. UPLOADS_DIR=/data/uploads).
+  uploadsDir: env.UPLOADS_DIR || path.join(root, 'public', 'uploads'),
   admin: {
     email: env.ADMIN_EMAIL || 'admin@zaqa.pk',
     password: env.ADMIN_PASSWORD || '',
