@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ZAQA — Fragrances by Zaqa</title>
+  <meta name="description" content="Luxury perfumes and attars by ZAQA. Shop men’s, women’s, unisex, oud and more with secure JazzCash, Easypaisa, NayaPay and card payments.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="home vignette grain">
+  <canvas id="stage" class="stage-fixed" aria-hidden="true"></canvas>
+  <main class="page-content">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-inner">
+          <div class="hero-monogram reveal" id="hero-logo"></div>
+          <p class="eyebrow reveal reveal-d1" id="hero-eyebrow">Fragrances by Zaqa</p>
+          <h1 class="reveal reveal-d2" id="hero-title">Scent, sculpted in light.</h1>
+          <p class="lead reveal reveal-d3" id="hero-sub"></p>
+          <div class="hero-cta reveal reveal-d4">
+            <a class="btn" id="hero-cta" href="/categories">Discover the collection</a>
+            <a class="btn btn-ghost" href="/shop">Shop all</a>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-cue" aria-hidden="true">Scroll</div>
+    </section>
+
+    <section class="section band" id="categories">
+      <div class="container">
+        <div class="section-head reveal">
+          <div><p class="eyebrow">The collection</p><h2>Find your <em class="gold-text">signature</em></h2></div>
+          <p>From smouldering oud to luminous florals, every ZAQA family is composed for a different mood.</p>
+        </div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+    </section>
+
+    <section class="section band-solid" id="featured">
+      <div class="container">
+        <div class="section-head reveal">
+          <div><p class="eyebrow">Signatures</p><h2>The most coveted</h2></div>
+          <a class="btn btn-ghost" href="/shop">View all fragrances</a>
+        </div>
+        <div class="product-grid" id="featured-grid"></div>
+      </div>
+    </section>
+
+    <section class="section" id="story">
+      <div class="container story">
+        <div class="glass reveal">
+          <p class="eyebrow">Our story</p>
+          <h2 id="story-title">The art of ZAQA</h2>
+          <p id="story-text"></p>
+          <a class="btn btn-ghost" href="/categories" style="margin-top:1.6rem">Explore the families</a>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </section>
+
+    <section class="section band" id="sale" hidden>
+      <div class="container">
+        <div class="sale-banner reveal">
+          <div><p class="eyebrow">Limited time</p><h2 id="sale-title"></h2><p class="muted" id="sale-sub"></p></div>
+          <a class="btn" href="/shop">Shop the sale</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band-solid" id="testimonials-section">
+      <div class="container">
+        <div class="section-head reveal"><div><p class="eyebrow">Words from our clients</p><h2>Worn &amp; adored</h2></div></div>
+        <div class="testimonials" id="testimonials"></div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/js/pages/home.js"></script>
+</body>
+</html>

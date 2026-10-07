@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Categories — ZAQA</title>
+  <meta name="description" content="Explore every ZAQA fragrance family in 3D.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="vignette grain">
+  <main class="page-content">
+    <section class="carousel-stage">
+      <canvas id="stage" class="stage-abs" aria-label="3D carousel of fragrance categories. Drag or use the arrows to browse."></canvas>
+      <div class="carousel-title"><p class="eyebrow">The ZAQA families</p></div>
+      <div class="carousel-ui">
+        <p class="eyebrow" id="car-count"></p>
+        <h2 id="car-name">&nbsp;</h2>
+        <p class="tagline" id="car-tag">&nbsp;</p>
+        <a class="btn" id="car-open" href="/shop">Explore</a>
+        <div class="carousel-nav">
+          <button class="icon-btn" id="car-prev" aria-label="Previous category">&#8592;</button>
+          <div class="carousel-dots" id="car-dots"></div>
+          <button class="icon-btn" id="car-next" aria-label="Next category">&#8594;</button>
+        </div>
+      </div>
+    </section>
+    <section class="section band-solid">
+      <div class="container">
+        <div class="section-head reveal"><div><p class="eyebrow">All categories</p><h2>Every family, at a glance</h2></div></div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/js/pages/categories.js"></script>
+</body>
+</html>

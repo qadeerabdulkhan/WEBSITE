@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Shop — ZAQA</title>
+  <meta name="description" content="Shop ZAQA perfumes, attars, gift sets and body mists.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="grain">
+  <main class="page-content">
+    <section class="page-banner">
+      <canvas id="stage" class="stage-abs" aria-hidden="true"></canvas>
+      <div class="container">
+        <p class="crumbs"><a href="/">Home</a> / <a href="/categories">Categories</a></p>
+        <h1 id="shop-title">All fragrances</h1>
+        <p id="shop-sub">Every ZAQA creation, from everyday mists to collector attars.</p>
+      </div>
+    </section>
+    <section class="container" style="padding-bottom:5rem">
+      <div class="toolbar">
+        <div class="chips" id="chips"></div>
+        <input class="input" id="search" type="search" placeholder="Search notes or names" aria-label="Search fragrances" style="max-width:240px">
+        <select class="input" id="sort" aria-label="Sort" style="max-width:190px">
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </div>
+      <div class="product-grid" id="grid"></div>
+    </section>
+  </main>
+  <script type="module" src="/js/pages/shop.js"></script>
+</body>
+</html>

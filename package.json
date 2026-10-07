@@ -1,0 +1,20 @@
+{
+  "name": "zaqa-fragrances",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ZAQA — Fragrances by Zaqa. 3D perfume store with admin and customer dashboards.",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2"
+  }
+}

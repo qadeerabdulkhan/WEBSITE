@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dashboard — ZAQA</title>
+  <meta name="description" content="ZAQA admin dashboard.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin">
+  <div class="admin-shell">
+    <aside class="admin-side">
+      <div class="emblem"><canvas id="emblem" aria-hidden="true"></canvas></div>
+      <p class="admin-brand">ZAQA <span>Dashboard</span></p>
+      <nav class="admin-nav" id="admin-nav">
+        <button data-view="overview" aria-current="true">Overview</button>
+        <button data-view="orders">Orders</button>
+        <button data-view="products">Products &amp; prices</button>
+        <button data-view="categories">Categories</button>
+        <button data-view="discounts">Discounts</button>
+        <button data-view="content">Hero &amp; content</button>
+        <button data-view="testimonials">Testimonials</button>
+        <button data-view="customers">Customers</button>
+        <button data-view="settings">Store settings</button>
+      </nav>
+      <div class="admin-side-foot">
+        <a class="link" href="/" target="_blank" rel="noopener">View store ↗</a>
+        <button class="link" id="admin-logout" style="background:none;border:0;cursor:pointer">Sign out</button>
+      </div>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-top"><button class="icon-btn admin-menu" id="admin-menu" aria-label="Menu">☰</button><h1 id="view-title">Overview</h1><div id="view-actions"></div></header>
+      <div id="view"></div>
+    </main>
+  </div>
+  <dialog class="modal" id="modal"><form method="dialog" class="modal-inner" id="modal-form"></form></dialog>
+  <script type="module" src="/js/pages/admin.js"></script>
+</body>
+</html>
