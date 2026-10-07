@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nebula — 3D Studio</title>
+  <meta name="description" content="An interactive 3D website built with Three.js." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <header class="nav">
+    <a href="#home" class="logo">NEBULA<span>.</span></a>
+    <nav>
+      <a href="#work">Work</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="section hero">
+      <div class="content">
+        <p class="eyebrow">Interactive 3D Studio</p>
+        <h1>We build worlds<br />for the web.</h1>
+        <p class="lead">Real-time 3D experiences that run right in your browser. Move your mouse, scroll down, and click the orb.</p>
+        <a href="#work" class="btn">Explore</a>
+      </div>
+      <div class="scroll-hint" aria-hidden="true"><span></span></div>
+    </section>
+
+    <section id="work" class="section right">
+      <div class="content">
+        <p class="eyebrow">01 — Work</p>
+        <h2>Shapes that move with you.</h2>
+        <p>Every object on this page is rendered live with WebGL. Geometry, lighting and motion respond to scroll and pointer input at 60 frames per second.</p>
+        <ul class="cards">
+          <li><strong>WebGL</strong><span>Custom GLSL shaders</span></li>
+          <li><strong>Motion</strong><span>Scroll-driven camera</span></li>
+          <li><strong>Interaction</strong><span>Pointer parallax</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <div class="content">
+        <p class="eyebrow">02 — About</p>
+        <h2>Lightweight by design.</h2>
+        <p>No build step and no framework, just HTML, CSS and a single JavaScript module on top of Three.js. Drop the folder on any static host and it works.</p>
+        <div class="stats">
+          <div><strong>0</strong><span>build steps</span></div>
+          <div><strong>1</strong><span>canvas</span></div>
+          <div><strong>60</strong><span>fps target</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section right">
+      <div class="content">
+        <p class="eyebrow">03 — Contact</p>
+        <h2>Let's make something.</h2>
+        <p>Have an idea that deserves another dimension? Get in touch.</p>
+        <a href="mailto:hello@example.com" class="btn">Say hello</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© <span id="year"></span> Nebula. Built with Three.js.</footer>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
