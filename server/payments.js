@@ -3,7 +3,7 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import { config } from './config.js';
-import { one, run } from './db.js';
+import { one, run, getContent } from './db.js';
 import { HttpError } from './auth.js';
 import { markOrderPaid, markOrderFailed, addHistory } from './shop.js';
 
@@ -271,10 +271,22 @@ async function mastercardReturn(req, res) {
 // ---------------- Shared ----------------
 export const gateways = { jazzcash, easypaisa, nayapay, mastercard };
 
+// Manual transfer is usable when switched on and at least one account is filled in.
+export function manualPayment() {
+  const m = getContent('manualPayment', {}) || {};
+  const ready = m.enabled && (m.jazzcashNumber || m.easypaisaNumber || m.nayapayNumber || m.bankIban);
+  return ready ? m : null;
+}
+
 export function availableMethods() {
-  return Object.values(gateways)
-    .filter((g) => config.paymentMode === 'simulate' || g.configured())
+  const manual = manualPayment();
+  // With manual transfers on, the simulated test gateways are hidden so real customers never see them.
+  const showGateway = (g) => (config.paymentMode === 'simulate' ? !manual : g.configured());
+  const methods = Object.values(gateways)
+    .filter(showGateway)
     .map((g) => ({ id: g.id, label: g.label }));
+  if (manual) methods.unshift({ id: 'manual', label: 'Bank / wallet transfer' });
+  return methods;
 }
 
 function shell(title, body) {
@@ -328,6 +340,7 @@ export function paymentRoutes() {
       const order = ownOrder(req);
       if (order.payment_status === 'paid') return res.redirect(`/account?order=${encodeURIComponent(order.ref)}`);
       if (!['pending_payment', 'payment_failed'].includes(order.status)) throw new HttpError(400, 'This order can no longer be paid.');
+      if (order.payment_method === 'manual') return res.redirect(`/transfer?order=${encodeURIComponent(order.ref)}`);
       const gateway = gateways[order.payment_method];
       if (!gateway) throw new HttpError(400, 'Unknown payment method.');
       if (config.paymentMode === 'simulate') return res.redirect(`/pay/sim/${encodeURIComponent(order.ref)}`);

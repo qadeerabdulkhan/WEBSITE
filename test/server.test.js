@@ -192,3 +192,42 @@ test('JazzCash and Easypaisa request signing', async () => {
   const d = crypto.createDecipheriv('aes-128-ecb', Buffer.from('0123456789abcdef'), null);
   assert.equal(Buffer.concat([d.update(Buffer.from(enc, 'base64')), d.final()]).toString(), 'amount=10.0&storeId=1');
 });
+
+test('manual transfer: own accounts, TID + screenshot, admin confirms', async () => {
+  const admin = client();
+  await admin('POST', '/api/auth/login', { identifier: 'admin@zaqa.pk', password: 'admin-pass-123' });
+  // Turning it on needs no merchant keys.
+  await admin('PUT', '/api/admin/content', { manualPayment: { enabled: true, jazzcashNumber: '03001234567', jazzcashTitle: 'Zaqa Owner' } });
+  const site = await client()('GET', '/api/site');
+  assert.deepEqual(site.data.paymentMethods.map((m) => m.id), ['manual']); // simulated gateways hidden
+  assert.equal(site.data.manualPayment.accounts[0].number, '03001234567');
+
+  const buyer = client();
+  await buyer('POST', '/api/auth/register', { name: 'Transfer Buyer', identifier: 'transfer@x.pk', password: 'longenough' });
+  const order = await buyer('POST', '/api/orders', { items: [{ slug: 'mint-verde', qty: 1 }], shipping, paymentMethod: 'manual' });
+  assert.equal(order.status, 201);
+  const start = await buyer('GET', order.data.payUrl);
+  assert.equal(start.headers.get('location'), `/transfer?order=${order.data.ref}`);
+
+  // 1x1 PNG
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  assert.equal((await buyer('POST', `/api/orders/${order.data.ref}/transfer`, { tid: '12345678', paidTo: 'jazzcash' })).status, 400);
+  const sent = await buyer('POST', `/api/orders/${order.data.ref}/transfer`, { tid: '1234 5678', paidTo: 'jazzcash', sender: 'Ali', receipt: png });
+  assert.equal(sent.status, 200);
+  assert.equal(sent.data.paymentStatus, 'awaiting_verification');
+
+  // The same TID can't be reused for another order.
+  const order2 = await buyer('POST', '/api/orders', { items: [{ slug: 'mint-verde', qty: 1 }], shipping, paymentMethod: 'manual' });
+  assert.equal((await buyer('POST', `/api/orders/${order2.data.ref}/transfer`, { tid: '12345678', receipt: png })).status, 409);
+
+  // Admin sees the details and the private screenshot, then confirms.
+  const detail = await admin('GET', `/api/admin/orders/${order.data.ref}`);
+  assert.equal(detail.data.paymentData.tid, '12345678');
+  assert.equal((await admin('GET', `/api/admin/receipts/${detail.data.paymentData.receipt}`)).status, 200);
+  assert.equal((await buyer('GET', `/api/admin/receipts/${detail.data.paymentData.receipt}`)).status, 403);
+  const paid = await admin('PUT', `/api/admin/orders/${order.data.ref}`, { markPaid: true });
+  assert.equal(paid.data.paymentStatus, 'paid');
+  assert.equal(paid.data.paymentRef, '12345678');
+
+  await admin('PUT', '/api/admin/content', { manualPayment: { enabled: false } });
+});

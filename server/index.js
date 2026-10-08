@@ -48,7 +48,7 @@ app.use((_req, res, next) => {
 app.use(loadUser);
 
 // Large JSON only for image uploads; everything else stays small.
-app.use('/api/admin/upload', express.json({ limit: '6mb' }));
+app.use(['/api/admin/upload', '/api/orders/:ref/transfer'], express.json({ limit: '6mb' }));
 app.use('/api', express.json({ limit: '200kb' }));
 
 // CSRF defence: state-changing API calls must be JSON from this origin.
@@ -93,7 +93,7 @@ app.use('/api', catchAsync(apiRoutes()));
 app.use(catchAsync(paymentRoutes()));
 
 // Page access: shoppers sign in first (configurable), the dashboard is admin-only.
-const PAGES = ['index', 'categories', 'shop', 'product', 'cart', 'checkout', 'account', 'admin', 'login'];
+const PAGES = ['index', 'categories', 'shop', 'product', 'cart', 'checkout', 'transfer', 'account', 'admin', 'login'];
 const pageFile = (name) => path.join(config.root, 'public', `${name}.html`);
 
 app.get(['/', ...PAGES.map((p) => `/${p}`), ...PAGES.map((p) => `/${p}.html`)], (req, res) => {
@@ -108,7 +108,7 @@ app.get(['/', ...PAGES.map((p) => `/${p}`), ...PAGES.map((p) => `/${p}.html`)], 
     if (req.user.role !== 'admin') return res.redirect('/');
     return res.sendFile(pageFile('admin'));
   }
-  const needsLogin = ['checkout', 'account'].includes(name) || settings().requireLogin;
+  const needsLogin = ['checkout', 'transfer', 'account'].includes(name) || settings().requireLogin;
   if (needsLogin && !req.user) return res.redirect(`/login?next=${next}`);
   res.sendFile(pageFile(name));
 });

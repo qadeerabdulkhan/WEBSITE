@@ -64,6 +64,21 @@ export const defaultContent = {
     title: 'The art of ZAQA',
     text: 'Every ZAQA fragrance begins with a memory: a garden at dusk, smoke from an oud burner, sea air on the Makran coast. Our perfumers blend precious oils by hand in small batches so each bottle carries a story worth wearing.',
   },
+  // Manual transfers to the owner's own JazzCash / Easypaisa / NayaPay / bank account
+  // (no merchant account needed); the owner verifies each payment and marks it paid.
+  manualPayment: {
+    enabled: false,
+    jazzcashNumber: '',
+    jazzcashTitle: '',
+    easypaisaNumber: '',
+    easypaisaTitle: '',
+    nayapayNumber: '',
+    nayapayTitle: '',
+    bankName: '',
+    bankTitle: '',
+    bankIban: '',
+    instructions: 'Send the exact total, then enter the transaction ID (TID) and upload a screenshot. We confirm payments within a few hours.',
+  },
   settings: {
     shippingFee: 250,
     freeShippingOver: 10000,

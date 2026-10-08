@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Complete payment — ZAQA</title>
+  <meta name="description" content="Complete your payment by bank or wallet transfer.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="container plain-page">
+    <h1>Complete your payment</h1>
+    <div class="two-col">
+      <div>
+        <section class="card" id="steps"><p class="muted">Loading…</p></section>
+        <form class="card" id="transfer-form" novalidate hidden>
+          <h2>Confirm your transfer</h2>
+          <div class="form-grid">
+            <div class="field"><label for="paidTo">I paid with</label><select class="input" id="paidTo" name="paidTo"></select></div>
+            <div class="field"><label for="tid">Transaction ID (TID)</label><input class="input" id="tid" name="tid" autocomplete="off" placeholder="e.g. 012345678901" required></div>
+            <div class="field full"><label for="sender">Sender name or number</label><input class="input" id="sender" name="sender" placeholder="The account the money was sent from"></div>
+            <div class="field full"><label for="receipt">Payment screenshot</label><input class="input" id="receipt" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <img id="receipt-preview" alt="" hidden style="max-width:180px;margin-top:.6rem;border-radius:10px;border:1px solid var(--line)"></div>
+          </div>
+          <p class="form-error" id="err" role="alert"></p>
+          <button class="btn btn-block" id="submit" type="submit">Submit payment details</button>
+        </form>
+      </div>
+      <aside class="card" id="summary"><p class="muted">Loading…</p></aside>
+    </div>
+  </main>
+  <script type="module" src="/js/pages/transfer.js"></script>
+</body>
+</html>

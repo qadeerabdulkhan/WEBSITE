@@ -15,12 +15,26 @@ import {
   rateLimit,
 } from './auth.js';
 import { findProducts, findProduct, quote, newOrderRef, shapeOrder, addHistory, settings } from './shop.js';
-import { availableMethods, gateways } from './payments.js';
+import { availableMethods, gateways, manualPayment } from './payments.js';
+import { saveImageDataUrl } from './images.js';
 import { config } from './config.js';
 
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 11);
 
 export const str = (v, max = 500) => String(v ?? '').trim().slice(0, max);
+
+// Account details shown to customers paying by manual transfer.
+function publicManual() {
+  const m = manualPayment();
+  if (!m) return null;
+  const accounts = [
+    m.jazzcashNumber && { type: 'jazzcash', label: 'JazzCash', number: m.jazzcashNumber, title: m.jazzcashTitle },
+    m.easypaisaNumber && { type: 'easypaisa', label: 'Easypaisa', number: m.easypaisaNumber, title: m.easypaisaTitle },
+    m.nayapayNumber && { type: 'nayapay', label: 'NayaPay', number: m.nayapayNumber, title: m.nayapayTitle },
+    m.bankIban && { type: 'bank', label: m.bankName || 'Bank transfer', number: m.bankIban, title: m.bankTitle },
+  ].filter(Boolean);
+  return { accounts, instructions: m.instructions };
+}
 
 export function publicSettings() {
   const s = settings();
@@ -132,6 +146,7 @@ export function apiRoutes() {
       settings: publicSettings(),
       testimonials: all('SELECT id, name, location, text, rating FROM testimonials WHERE active = 1 ORDER BY sort, id'),
       paymentMethods: availableMethods(),
+      manualPayment: publicManual(),
       paymentMode: config.paymentMode,
     });
   });
@@ -193,6 +208,32 @@ export function apiRoutes() {
     const o = one('SELECT * FROM orders WHERE ref = ? AND user_id = ?', req.params.ref, req.user.id);
     if (!o) throw new HttpError(404, 'Order not found.');
     res.json(shapeOrder(o));
+  });
+
+  // Customer reports a manual transfer: transaction ID, which account they paid, and a screenshot.
+  r.post('/orders/:ref/transfer', requireUser, (req, res) => {
+    const o = one('SELECT * FROM orders WHERE ref = ? AND user_id = ?', req.params.ref, req.user.id);
+    if (!o) throw new HttpError(404, 'Order not found.');
+    if (o.payment_method !== 'manual') throw new HttpError(400, 'This order is not a manual transfer.');
+    if (o.payment_status === 'paid') throw new HttpError(400, 'This order is already paid.');
+    if (!['pending_payment', 'payment_failed'].includes(o.status)) throw new HttpError(400, 'This order can no longer be paid.');
+    const tid = str(req.body.tid, 40).replace(/\s+/g, '');
+    if (!/^[A-Za-z0-9-]{4,40}$/.test(tid)) throw new HttpError(400, 'Enter the transaction ID (TID) from your payment receipt.');
+    // The same TID can't pay for two orders.
+    if (one('SELECT 1 FROM orders WHERE payment_ref = ? COLLATE NOCASE AND id != ?', tid, o.id)) {
+      throw new HttpError(409, 'This transaction ID was already used for another order.');
+    }
+    const paidTo = str(req.body.paidTo, 20);
+    const sender = str(req.body.sender, 60);
+    if (!req.body.receipt) throw new HttpError(400, 'Please upload a screenshot of your payment.');
+    const receipt = saveImageDataUrl(req.body.receipt, config.receiptsDir);
+    const data = { ...JSON.parse(o.payment_data || '{}'), gateway: 'manual', tid, paidTo, sender, receipt, submittedAt: new Date().toISOString() };
+    run(
+      `UPDATE orders SET status = 'pending_payment', payment_status = 'awaiting_verification', payment_ref = ?, payment_data = ?,
+       history = ?, updated_at = datetime('now') WHERE id = ?`,
+      tid, JSON.stringify(data), addHistory(o, 'pending_payment', `Transfer submitted (TID ${tid}); awaiting confirmation`), o.id
+    );
+    res.json(shapeOrder(one('SELECT * FROM orders WHERE id = ?', o.id)));
   });
 
   r.post('/orders/:ref/cancel', requireUser, (req, res) => {

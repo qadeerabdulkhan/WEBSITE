@@ -1,5 +1,3 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { all, one, run, tx, getContent, setContent } from './db.js';
@@ -7,6 +5,7 @@ import { HttpError, requireAdmin, publicUser } from './auth.js';
 import { findProducts, findProduct, shapeOrder, addHistory, markOrderPaid, ORDER_STATUSES } from './shop.js';
 import { str } from './api.js';
 import { config } from './config.js';
+import { saveImageDataUrl } from './images.js';
 
 const int = (v, { min = 0, max = 1e9, fallback = 0 } = {}) => {
   const n = Math.round(Number(v));
@@ -58,6 +57,8 @@ export function adminRoutes() {
          WHERE ${paid} AND created_at >= datetime('now','-13 days') GROUP BY day ORDER BY day`
       ),
       paymentMode: config.paymentMode,
+      manualEnabled: !!getContent('manualPayment', {})?.enabled,
+      awaitingTransfers: one("SELECT COUNT(*) AS v FROM orders WHERE payment_status = 'awaiting_verification'").v,
     });
   });
 
@@ -93,7 +94,7 @@ export function adminRoutes() {
     const note = str(req.body.note, 300);
     if (req.body.markPaid) {
       if (o.payment_status === 'paid') throw new HttpError(400, 'Order is already paid.');
-      markOrderPaid(o.ref, { paymentRef: str(req.body.paymentRef, 80) || 'manual', data: { gateway: 'manual' }, note: note || 'Payment confirmed manually by admin' });
+      markOrderPaid(o.ref, { paymentRef: str(req.body.paymentRef, 80) || o.payment_ref || 'manual', data: { gateway: 'manual' }, note: note || 'Payment confirmed manually by admin' });
     } else {
       const status = ORDER_STATUSES.includes(req.body.status) ? req.body.status : o.status;
       const tracking = req.body.tracking !== undefined ? str(req.body.tracking, 120) : o.tracking;
@@ -168,20 +169,14 @@ export function adminRoutes() {
 
   // ---------- Image upload ----------
   r.post('/upload', express.json({ limit: '6mb' }), (req, res) => {
-    const m = /^data:(image\/(png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body.dataUrl || ''));
-    if (!m) throw new HttpError(400, 'Upload a PNG, JPEG or WebP image.');
-    const buf = Buffer.from(m[3], 'base64');
-    if (buf.length > 4 * 1024 * 1024) throw new HttpError(400, 'Image must be under 4 MB.');
-    const sig = buf.subarray(0, 12);
-    const valid =
-      (m[2] === 'png' && sig.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) ||
-      (m[2] === 'jpeg' && sig[0] === 0xff && sig[1] === 0xd8) ||
-      (m[2] === 'webp' && sig.toString('ascii', 0, 4) === 'RIFF' && sig.toString('ascii', 8, 12) === 'WEBP');
-    if (!valid) throw new HttpError(400, 'That file is not a valid image.');
-    const name = `${crypto.randomBytes(12).toString('hex')}.${m[2] === 'jpeg' ? 'jpg' : m[2]}`;
-    fs.mkdirSync(config.uploadsDir, { recursive: true });
-    fs.writeFileSync(path.join(config.uploadsDir, name), buf);
+    const name = saveImageDataUrl(req.body.dataUrl, config.uploadsDir);
     res.status(201).json({ url: `/uploads/${name}` });
+  });
+
+  // Customers' payment screenshots (private; admin only).
+  r.get('/receipts/:name', (req, res) => {
+    if (!/^[a-f0-9]{24}\.(jpg|png|webp)$/.test(req.params.name)) throw new HttpError(404, 'Not found.');
+    res.sendFile(path.join(config.receiptsDir, req.params.name), (err) => err && res.status(404).end());
   });
 
   // ---------- Categories ----------
@@ -309,7 +304,7 @@ export function adminRoutes() {
 
   // ---------- Site content (hero, announcement, story, settings) ----------
   r.get('/content', (_req, res) => {
-    res.json({ hero: getContent('hero'), announcement: getContent('announcement'), story: getContent('story'), settings: getContent('settings') });
+    res.json({ hero: getContent('hero'), announcement: getContent('announcement'), story: getContent('story'), settings: getContent('settings'), manualPayment: getContent('manualPayment') });
   });
 
   r.put('/content', (req, res) => {
@@ -327,6 +322,24 @@ export function adminRoutes() {
       }
       if (b.announcement) setContent('announcement', { text: str(b.announcement.text, 200), active: !!bool(b.announcement.active) });
       if (b.story) setContent('story', { title: str(b.story.title, 120), text: str(b.story.text, 2000) });
+      if (b.manualPayment) {
+        const m = b.manualPayment;
+        const cur = getContent('manualPayment', {});
+        const f = (k, max = 60) => (m[k] !== undefined ? str(m[k], max) : cur[k] || '');
+        setContent('manualPayment', {
+          enabled: m.enabled !== undefined ? !!bool(m.enabled) : !!cur.enabled,
+          jazzcashNumber: f('jazzcashNumber', 30),
+          jazzcashTitle: f('jazzcashTitle'),
+          easypaisaNumber: f('easypaisaNumber', 30),
+          easypaisaTitle: f('easypaisaTitle'),
+          nayapayNumber: f('nayapayNumber', 30),
+          nayapayTitle: f('nayapayTitle'),
+          bankName: f('bankName'),
+          bankTitle: f('bankTitle'),
+          bankIban: f('bankIban', 40).toUpperCase().replace(/\s+/g, ' '),
+          instructions: f('instructions', 500),
+        });
+      }
       if (b.settings) {
         const s = b.settings;
         const cur = getContent('settings', {});
@@ -343,7 +356,7 @@ export function adminRoutes() {
         });
       }
     });
-    res.json({ hero: getContent('hero'), announcement: getContent('announcement'), story: getContent('story'), settings: getContent('settings') });
+    res.json({ hero: getContent('hero'), announcement: getContent('announcement'), story: getContent('story'), settings: getContent('settings'), manualPayment: getContent('manualPayment') });
   });
 
   // ---------- Customers ----------

@@ -5,6 +5,7 @@ import { html, setHTML, $, rs, toast } from '../util.js';
 import { cart } from '../cart.js';
 
 const PAY_META = {
+  manual: { bg: '#8c6d3a', text: 'Transfer', note: 'Send to our JazzCash, Easypaisa, NayaPay or bank account, then share the transaction ID' },
   jazzcash: { bg: '#d6001c', text: 'Jazz\nCash', note: 'Pay from your JazzCash mobile account' },
   easypaisa: { bg: '#20b04b', text: 'easy\npaisa', note: 'Pay from your Easypaisa mobile account' },
   nayapay: { bg: '#ff6a13', text: 'Naya\nPay', note: 'Pay from your NayaPay wallet' },
@@ -26,7 +27,7 @@ async function init() {
   const fill = { fullName: a.fullName || user?.name, phone: a.phone || user?.phone?.replace(/^\+92/, '0'), email: a.email || user?.email, line1: a.line1, line2: a.line2, city: a.city, province: a.province, postalCode: a.postalCode };
   for (const [k, v] of Object.entries(fill)) if (v && form.elements[k]) form.elements[k].value = v;
 
-  if (s.paymentMode === 'simulate') {
+  if (s.paymentMode === 'simulate' && !s.manualPayment) {
     setHTML($('#pay-mode'), html`<p class="notice warn" style="margin-bottom:1rem">Test mode: payments are simulated and no money is charged. The store owner switches this to live payments in the server settings.</p>`);
   }
   const methods = s.paymentMethods || [];
@@ -56,6 +57,19 @@ async function init() {
     <button class="btn btn-block" id="pay" type="submit" ${quote.problems.length || !methods.length ? 'disabled' : ''}>Pay ${rs(quote.total)} securely</button>
     <p class="secure-line">🔒 Payments are processed by the provider. No cash on delivery.</p>`
   );
+
+  // Wording depends on the chosen method: transfers are placed first and paid from the customer's own app.
+  const NOTE_GATEWAY = $('#pay-note').textContent;
+  const payLabel = () => (form.elements.paymentMethod?.value === 'manual' ? `Place order · ${rs(quote.total)}` : `Pay ${rs(quote.total)} securely`);
+  function syncMethod() {
+    const manual = form.elements.paymentMethod?.value === 'manual';
+    $('#pay-note').textContent = manual
+      ? 'Cash on delivery is not available. After placing your order you will see our account details. Send the total from your JazzCash, Easypaisa, NayaPay or bank app, then share the transaction ID.'
+      : NOTE_GATEWAY;
+    if (!$('#pay').disabled) $('#pay').textContent = payLabel();
+  }
+  form.addEventListener('change', (e) => e.target.name === 'paymentMethod' && syncMethod());
+  syncMethod();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -89,7 +103,7 @@ async function init() {
       err.textContent = ex.message;
       toast(ex.message, { error: true });
       btn.disabled = false;
-      btn.textContent = `Pay ${rs(quote.total)} securely`;
+      btn.textContent = payLabel();
     }
   });
 }

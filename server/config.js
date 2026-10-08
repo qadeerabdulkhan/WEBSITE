@@ -20,6 +20,8 @@ export const config = {
   dbFile: env.DB_FILE || path.join(root, 'data', 'zaqa.db'),
   // Keep uploads on persistent storage in production (e.g. UPLOADS_DIR=/data/uploads).
   uploadsDir: env.UPLOADS_DIR || path.join(root, 'public', 'uploads'),
+  // Payment screenshots are private: kept next to the database, never served publicly.
+  receiptsDir: path.join(path.dirname(env.DB_FILE || path.join(root, 'data', 'zaqa.db')), 'receipts'),
   admin: {
     email: env.ADMIN_EMAIL || 'admin@zaqa.pk',
     password: env.ADMIN_PASSWORD || '',

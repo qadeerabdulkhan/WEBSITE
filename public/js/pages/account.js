@@ -8,6 +8,7 @@ let user;
 const panel = () => $('#panel');
 
 const PAYMENT_MESSAGES = {
+  submitted: ['ok', 'Thank you! We have received your payment details and will confirm your payment shortly.'],
   success: ['ok', 'Payment received. Thank you! Your order is being prepared.'],
   failed: ['err', 'Your payment was not completed. You can try again below.'],
   pending: ['warn', 'Your payment is being confirmed. We’ll update your order as soon as the provider confirms it.'],
@@ -37,11 +38,11 @@ function orderCard(o, highlight) {
       <div><strong>Total</strong><strong>${rs(o.total)}</strong></div>
     </div>
     ${o.tracking ? html`<p class="notice" style="margin-top:1rem">Tracking: <strong>${o.tracking}</strong></p>` : ''}
-    ${o.paymentStatus === 'awaiting_verification' ? html`<p class="notice warn" style="margin-top:1rem">Payment reported by the provider and awaiting confirmation.</p>` : ''}
+    ${o.paymentStatus === 'awaiting_verification' ? html`<p class="notice warn" style="margin-top:1rem">${o.paymentMethod === 'manual' ? 'Payment details received. We are confirming your transfer.' : 'Payment reported by the provider and awaiting confirmation.'}</p>` : ''}
     <details style="margin-top:1rem"><summary class="muted" style="cursor:pointer">Order history</summary>
       <ul class="timeline">${o.history.map((h) => html`<li><strong>${statusLabel(h.status)}</strong> · ${formatDate(h.at)}${h.note ? html`<br>${h.note}` : ''}</li>`)}</ul>
     </details>
-    ${canPay ? html`<div style="display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap"><a class="btn btn-sm" href="/pay/${encodeURIComponent(o.ref)}/start">Pay now</a><button class="btn btn-ghost btn-sm" data-cancel="${o.ref}">Cancel order</button></div>` : ''}
+    ${canPay ? html`<div style="display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap"><a class="btn btn-sm" href="/pay/${encodeURIComponent(o.ref)}/start">${o.paymentMethod === 'manual' ? 'Send payment details' : 'Pay now'}</a><button class="btn btn-ghost btn-sm" data-cancel="${o.ref}">Cancel order</button></div>` : ''}
   </article>`;
 }
 

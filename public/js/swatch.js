@@ -18,5 +18,5 @@ export function staticProductImage(p) {
   )}`;
 }
 
-export const PAYMENT_LABELS = { jazzcash: 'JazzCash', easypaisa: 'Easypaisa', nayapay: 'NayaPay', mastercard: 'Card (Mastercard)' };
+export const PAYMENT_LABELS = { manual: 'Bank / wallet transfer', jazzcash: 'JazzCash', easypaisa: 'Easypaisa', nayapay: 'NayaPay', mastercard: 'Card (Mastercard)' };
 export const paymentLabel = (id) => PAYMENT_LABELS[id] || id;

@@ -171,7 +171,8 @@ async function overview() {
   const recent = await api('/admin/orders');
   setHTML(
     view(),
-    html`${s.paymentMode === 'simulate' ? html`<p class="notice warn" style="margin-bottom:1rem">Payments are in <strong>test mode</strong>: customers see a simulated checkout and no money is charged. Add your JazzCash, Easypaisa, NayaPay and Mastercard merchant keys in <code>.env</code> and set <code>PAYMENT_MODE=live</code> to take real payments.</p>` : ''}
+    html`${s.awaitingTransfers ? html`<p class="notice warn" style="margin-bottom:1rem"><strong>${s.awaitingTransfers}</strong> transfer payment(s) waiting for you to confirm. Open <a class="link" href="#orders">Orders</a>.</p>` : ''}
+    ${s.paymentMode === 'simulate' && !s.manualEnabled ? html`<p class="notice warn" style="margin-bottom:1rem">Payments are in <strong>test mode</strong>: customers see a simulated checkout and no money is charged. Add your JazzCash, Easypaisa, NayaPay and Mastercard merchant keys in <code>.env</code> and set <code>PAYMENT_MODE=live</code> to take real payments, or turn on <a class="link" href="#payments">Payment accounts</a> to receive transfers in your own JazzCash, Easypaisa or bank account.</p>` : ''}
     <div class="tiles">
       <div class="tile"><span class="label">Total revenue</span><strong>${rs(s.revenue)}</strong><small>paid orders</small></div>
       <div class="tile"><span class="label">Last 30 days</span><strong>${rs(s.revenue30)}</strong></div>
@@ -240,6 +241,21 @@ async function orders() {
   wireOrderRows();
 }
 
+// What the customer submitted for a manual transfer, so the owner can check it in their own app.
+function transferInfo(o) {
+  const d = o.paymentData || {};
+  if (!d.tid) return html`<p class="notice warn">The customer has not sent their transfer details yet.</p>`;
+  const paidTo = { jazzcash: 'JazzCash', easypaisa: 'Easypaisa', nayapay: 'NayaPay', bank: 'Bank account' }[d.paidTo] || d.paidTo;
+  return html`<div class="notice ${o.paymentStatus === 'paid' ? 'ok' : 'warn'}">
+    <strong>Transfer details from the customer</strong><br>
+    Transaction ID (TID): <strong>${d.tid}</strong><br>
+    Paid to: ${paidTo || '—'} · Amount due: <strong>${rs(o.total)}</strong>${d.sender ? html`<br>Sender: ${d.sender}` : ''}
+    ${d.receipt ? html`<br><a class="link" href="/api/admin/receipts/${d.receipt}" target="_blank" rel="noopener">Open payment screenshot ↗</a>
+      <a href="/api/admin/receipts/${d.receipt}" target="_blank" rel="noopener"><img src="/api/admin/receipts/${d.receipt}" alt="Payment screenshot" style="max-width:160px;margin-top:.6rem;border-radius:8px;border:1px solid var(--line)"></a>` : ''}
+    ${o.paymentStatus !== 'paid' ? html`<br><span style="font-size:.82rem">Open your ${paidTo || 'account'} app, confirm ${rs(o.total)} arrived with this TID, then tick “Mark as paid” below.</span>` : ''}
+  </div>`;
+}
+
 async function orderDetail(ref) {
   const o = await api(`/admin/orders/${encodeURIComponent(ref)}`);
   const a = o.shippingAddress;
@@ -255,6 +271,7 @@ async function orderDetail(ref) {
       <div class="muted"><span>Delivery</span><span>${o.shipping ? rs(o.shipping) : 'Free'}</span></div>
       <div><strong>Total</strong><strong>${rs(o.total)}</strong></div></div>
     <p class="kv">Payment: <strong>${paymentLabel(o.paymentMethod)}</strong> · ${o.paymentStatus.replace('_', ' ')}${o.paymentRef ? ` · ref ${o.paymentRef}` : ''}</p>
+    ${o.paymentMethod === 'manual' ? transferInfo(o) : ''}
     <details><summary class="muted" style="cursor:pointer">History</summary><ul class="timeline">${o.history.map((h) => html`<li><strong>${statusLabel(h.status)}</strong> · ${formatDate(h.at)}${h.note ? html`<br>${h.note}` : ''}</li>`)}</ul></details>`,
     fields: [
       { name: 'status', label: 'Order status', type: 'select', options: STATUSES.map((s) => [s, statusLabel(s)]) },
@@ -599,6 +616,60 @@ async function customers() {
   );
 }
 
+/* ---------------- Payment accounts (manual transfers) ---------------- */
+async function payments() {
+  setActions();
+  const { manualPayment: m = {} } = await api('/admin/content');
+  const pm = await api('/payment-methods');
+  const field = (id, label, value, placeholder = '') =>
+    html`<div class="field"><label for="mp-${id}">${label}</label><input class="input" id="mp-${id}" value="${value || ''}" placeholder="${placeholder}"></div>`;
+  setHTML(
+    view(),
+    html`<form id="mp-form">
+      <section class="panel"><h2>Receive payments in your own accounts</h2>
+        <p class="muted" style="margin-bottom:1rem">No merchant account needed. Customers send money to the accounts below, then submit the transaction ID (TID) and a screenshot. You check your app and mark the order as paid in <strong>Orders</strong>.</p>
+        <label class="check"><input type="checkbox" id="mp-enabled" ${m.enabled ? raw('checked') : ''}> Show “Bank / wallet transfer” at checkout</label>
+      </section>
+      <section class="panel"><h2>JazzCash</h2><div class="form-grid">
+        ${field('jazzcashNumber', 'JazzCash number', m.jazzcashNumber, '03xx xxxxxxx')}${field('jazzcashTitle', 'Account title (name)', m.jazzcashTitle)}
+      </div></section>
+      <section class="panel"><h2>Easypaisa</h2><div class="form-grid">
+        ${field('easypaisaNumber', 'Easypaisa number', m.easypaisaNumber, '03xx xxxxxxx')}${field('easypaisaTitle', 'Account title (name)', m.easypaisaTitle)}
+      </div></section>
+      <section class="panel"><h2>NayaPay</h2><div class="form-grid">
+        ${field('nayapayNumber', 'NayaPay number or ID', m.nayapayNumber, '03xx xxxxxxx')}${field('nayapayTitle', 'Account title (name)', m.nayapayTitle)}
+      </div></section>
+      <section class="panel"><h2>Bank account</h2><div class="form-grid">
+        ${field('bankName', 'Bank name', m.bankName, 'Meezan Bank')}${field('bankTitle', 'Account title (name)', m.bankTitle)}
+        <div class="field full"><label for="mp-bankIban">IBAN or account number</label><input class="input" id="mp-bankIban" value="${m.bankIban || ''}" placeholder="PK00 XXXX 0000 0000 0000 0000"></div>
+      </div></section>
+      <section class="panel"><h2>Message for customers</h2>
+        <div class="field"><label for="mp-instructions">Shown under your account details</label><textarea class="input" id="mp-instructions">${m.instructions || ''}</textarea></div>
+      </section>
+      <p class="kv" style="margin-bottom:1rem">Shown at checkout now: <strong>${pm.methods.map((x) => x.label).join(', ') || 'none'}</strong></p>
+      <p class="muted" style="font-size:.85rem;margin-bottom:1rem">Leave a section empty to hide it. While manual transfers are on, the built-in <em>test</em> payment buttons are hidden from customers.</p>
+      <button class="btn">Save payment accounts</button>
+    </form>`
+  );
+  $('#mp-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const body = { enabled: $('#mp-enabled').checked };
+    for (const k of ['jazzcashNumber', 'jazzcashTitle', 'easypaisaNumber', 'easypaisaTitle', 'nayapayNumber', 'nayapayTitle', 'bankName', 'bankTitle', 'bankIban', 'instructions']) {
+      body[k] = $(`#mp-${k}`).value;
+    }
+    if (body.enabled && !(body.jazzcashNumber || body.easypaisaNumber || body.nayapayNumber || body.bankIban)) {
+      return toast('Add at least one account number before turning transfers on.', { error: true });
+    }
+    try {
+      await api('/admin/content', { method: 'PUT', body: { manualPayment: body } });
+      toast('Payment accounts saved');
+      payments();
+    } catch (err) {
+      toast(err.message, { error: true });
+    }
+  };
+}
+
 /* ---------------- Settings ---------------- */
 async function settings() {
   setActions();
@@ -660,6 +731,7 @@ const VIEWS = {
   content: ['Hero & content', content],
   testimonials: ['Testimonials', testimonials],
   customers: ['Customers', customers],
+  payments: ['Payment accounts', payments],
   settings: ['Store settings', settings],
 };
 

@@ -35,6 +35,7 @@ Run the tests with `npm test`.
 | Hero & content | Edit the hero headline, sub-headline and button, the announcement bar and the "Our story" section |
 | Testimonials | Add, edit, hide or delete testimonials |
 | Customers | See every account with its order count and total spent |
+| Payment accounts | Receive payments in your own JazzCash, Easypaisa, NayaPay or bank account (no merchant account needed) and check each transfer |
 | Store settings | Set the delivery fee, the free-delivery threshold, the sign-in requirement and contact details |
 
 ## Customer dashboard (`/account`)
@@ -61,6 +62,16 @@ In `sandbox` and `live` mode, checkout only shows the methods whose keys are fil
 | **Mastercard / Visa** | A Mastercard Payment Gateway Services (MPGS) merchant account from your bank (for example HBL, Bank Alfalah or Meezan) | Hosted Checkout: the server creates a session, the customer pays on the bank's page, and the server checks the success indicator and looks the order up before marking it paid. Set `MPGS_GATEWAY_URL` to the host your bank gives you. |
 
 Before going live, run one real low-value payment per method and confirm it arrives in your merchant account.
+
+### Without a merchant account: bank / wallet transfer
+
+Under **Admin → Payment accounts**, switch on "Bank / wallet transfer" and enter your own JazzCash, Easypaisa or NayaPay number and/or bank IBAN. At checkout, customers then:
+
+1. place the order and see your account details and the exact amount;
+2. send the money from their own app;
+3. enter the transaction ID (TID) and upload a screenshot.
+
+The order shows as *awaiting verification* in **Orders**, with the TID and the screenshot. Screenshots are stored privately next to the database and only admins can open them. Check that the money arrived in your app, then tick **Mark as paid**. A TID can only be used for one order. While transfers are on, the simulated test gateways are hidden from customers. Personal wallets have monthly limits and their terms may not allow regular business use, so move to merchant accounts as orders grow.
 
 ## Deploying
 
