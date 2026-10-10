@@ -103,6 +103,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 `);
 
+// Columns added after the first release; existing databases get them on start-up.
+for (const [col, def] of [
+  ['concentration', "TEXT NOT NULL DEFAULT 'Eau de Parfum'"],
+  ['glass_style', "TEXT NOT NULL DEFAULT 'clear'"],
+]) {
+  if (!db.prepare('PRAGMA table_info(products)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE products ADD COLUMN ${col} ${def}`);
+}
+
 export const one = (sql, ...params) => db.prepare(sql).get(...params);
 export const all = (sql, ...params) => db.prepare(sql).all(...params);
 export const run = (sql, ...params) => db.prepare(sql).run(...params);

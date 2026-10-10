@@ -6,6 +6,8 @@ import { staticProductImage, paymentLabel } from '../swatch.js';
 
 const view = () => $('#view');
 const STATUSES = ['pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'payment_failed'];
+const CONCENTRATIONS = ['Extrait de Parfum', 'Eau de Parfum', 'Eau de Toilette', 'Perfume Oil (Attar)', 'Body Mist', 'Gift Set'];
+const GLASS = [['clear', 'Clear glass'], ['frosted', 'Frosted glass'], ['black', 'Black glass'], ['smoked', 'Smoked glass']];
 const SHAPES = [['classic', 'Classic (square)'], ['round', 'Round flacon'], ['tall', 'Tall cylinder'], ['flask', 'Teardrop flask'], ['oud', 'Faceted oud'], ['mist', 'Body mist']];
 let categoriesCache = [];
 
@@ -301,6 +303,7 @@ function productFields() {
     { name: 'name', label: 'Name', required: true, full: true },
     { name: 'categoryId', label: 'Category', type: 'select', options: [['', '— None —'], ...categoriesCache.map((c) => [c.id, c.name])] },
     { name: 'sizeMl', label: 'Size (ml)', type: 'number', min: 1 },
+    { name: 'concentration', label: 'Concentration', type: 'select', options: CONCENTRATIONS.map((c) => [c, c]) },
     { name: 'price', label: 'Price (Rs)', type: 'number', min: 1, required: true },
     { name: 'discountPercent', label: 'Discount %', type: 'number', min: 0, max: 90, help: 'Product sale. 0 for none.' },
     { name: 'stock', label: 'Stock', type: 'number', min: 0 },
@@ -309,6 +312,7 @@ function productFields() {
     { name: 'notesHeart', label: 'Heart notes' },
     { name: 'notesBase', label: 'Base notes', full: true },
     { name: 'bottleShape', label: '3D bottle shape', type: 'select', options: SHAPES },
+    { name: 'glassStyle', label: 'Glass', type: 'select', options: GLASS },
     { name: 'liquidColor', label: 'Liquid colour', type: 'color' },
     { name: 'capColor', label: 'Cap colour', type: 'color' },
     { name: 'imageUrl', label: 'Product photo (optional — the 3D bottle is used when empty)', type: 'image', full: true },
@@ -321,6 +325,7 @@ const productValues = (p) => ({
   name: p.name,
   categoryId: p.categoryId ?? '',
   sizeMl: p.sizeMl,
+  concentration: p.concentration,
   price: p.price,
   discountPercent: p.discountPercent,
   stock: p.stock,
@@ -329,6 +334,7 @@ const productValues = (p) => ({
   notesHeart: p.notes.heart,
   notesBase: p.notes.base,
   bottleShape: p.bottle.shape,
+  glassStyle: p.bottle.glass || 'clear',
   liquidColor: p.bottle.liquid,
   capColor: p.bottle.cap,
   imageUrl: p.imageUrl,
@@ -340,7 +346,7 @@ function editProduct(p) {
   openForm({
     title: p ? `Edit ${p.name}` : 'Add product',
     fields: productFields(),
-    values: p ? productValues(p) : { sizeMl: 100, stock: 10, discountPercent: 0, bottleShape: 'classic', liquidColor: '#d9a441', capColor: '#c9a96e', active: true },
+    values: p ? productValues(p) : { sizeMl: 100, concentration: 'Eau de Parfum', stock: 10, discountPercent: 0, bottleShape: 'classic', glassStyle: 'clear', liquidColor: '#e6c77d', capColor: '#c9a96e', active: true },
     submitLabel: p ? 'Save changes' : 'Add product',
     danger: p && { label: 'Delete product', confirm: `Delete ${p.name}? This cannot be undone.`, action: async () => (await api(`/admin/products/${p.id}`, { method: 'DELETE' }), toast('Product deleted'), products()) },
     onSubmit: async (v) => {
@@ -353,7 +359,7 @@ function editProduct(p) {
 
 let productFilter = '';
 async function products() {
-  setActions(html`<button class="btn btn-ghost btn-sm" id="bulk">Bulk price change</button><button class="btn btn-sm" id="add-product">+ Add product</button>`);
+  setActions(html`<button class="btn btn-ghost btn-sm" id="load-catalog">Load sample catalog</button><button class="btn btn-ghost btn-sm" id="bulk">Bulk price change</button><button class="btn btn-sm" id="add-product">+ Add product</button>`);
   const [list] = await Promise.all([api('/admin/products'), loadCategories()]);
   const filtered = productFilter ? list.filter((p) => String(p.categoryId) === productFilter) : list;
   setHTML(
@@ -380,6 +386,18 @@ async function products() {
   const byId = new Map(list.map((p) => [String(p.id), p]));
   $('#pf').onchange = (e) => ((productFilter = e.target.value), products());
   $('#add-product').onclick = () => editProduct(null);
+  $('#load-catalog').onclick = () =>
+    openForm({
+      title: 'Load the sample catalog',
+      intro: html`<p class="notice warn">This deletes <strong>all current products and categories</strong> and replaces them with ZAQA’s 24 starter fragrances (realistic names, notes, concentrations and prices). Orders, customers, coupons and content are kept.</p>`,
+      fields: [{ name: 'confirm', label: 'Type REPLACE to confirm', full: true, required: true }],
+      submitLabel: 'Replace products',
+      onSubmit: async (v) => {
+        const r = await api('/admin/catalog/reset', { method: 'POST', body: { confirm: v.confirm.trim() } });
+        toast(`${r.products} products loaded`);
+        products();
+      },
+    });
   $('#bulk').onclick = () =>
     openForm({
       title: 'Bulk price change',

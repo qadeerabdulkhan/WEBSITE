@@ -94,10 +94,10 @@ test('cart is priced on the server and coupons apply', async () => {
   const c = client();
   const q = await c('POST', '/api/cart/quote', { items: [{ slug: 'noir-absolu', qty: 2, price: 1 }], coupon: 'welcome10' });
   assert.equal(q.status, 200);
-  assert.equal(q.data.subtotal, 25000);
-  assert.equal(q.data.discount, 2500);
+  assert.equal(q.data.subtotal, 17900); // 2 × Rs 8,950, ignoring the client's price
+  assert.equal(q.data.discount, 1790);
   assert.equal(q.data.shipping, 0);
-  assert.equal(q.data.total, 22500);
+  assert.equal(q.data.total, 16110);
   const bad = await c('POST', '/api/cart/quote', { items: [{ slug: 'noir-absolu', qty: 1 }], coupon: 'NOPE' });
   assert.equal(bad.data.couponError, 'This coupon code is not valid.');
 });
@@ -126,7 +126,7 @@ test('full purchase: order, simulated payment, stock and admin tracking', async 
   assert.equal((await buyer('POST', '/api/orders', { items: [{ slug: 'santal-noir', qty: 1 }], shipping, paymentMethod: 'cod' })).status, 400);
   const order = await buyer('POST', '/api/orders', { items: [{ slug: 'santal-noir', qty: 2 }], shipping, paymentMethod: 'easypaisa' });
   assert.equal(order.status, 201);
-  assert.equal(order.data.total, 26400);
+  assert.equal(order.data.total, 16900);
 
   const start = await buyer('GET', order.data.payUrl);
   assert.equal(start.status, 302);

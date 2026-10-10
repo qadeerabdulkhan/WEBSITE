@@ -189,7 +189,7 @@ export function apiRoutes() {
     }
     if (!parseIdentifier(ship.phone)?.phone) throw new HttpError(400, 'Enter a valid mobile number for delivery.');
     const ref = newOrderRef();
-    const items = q.lines.map((l) => ({ productId: l.productId, slug: l.slug, name: l.name, sizeMl: l.sizeMl, unitPrice: l.unitPrice, qty: l.qty, lineTotal: l.lineTotal, bottle: l.bottle, imageUrl: l.imageUrl }));
+    const items = q.lines.map((l) => ({ productId: l.productId, slug: l.slug, name: l.name, sizeMl: l.sizeMl, concentration: l.concentration, unitPrice: l.unitPrice, qty: l.qty, lineTotal: l.lineTotal, bottle: l.bottle, imageUrl: l.imageUrl }));
     run(
       `INSERT INTO orders (ref, user_id, items, subtotal, discount, shipping, total, coupon_code, payment_method, shipping_address, history)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

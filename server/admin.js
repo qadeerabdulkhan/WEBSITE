@@ -6,6 +6,7 @@ import { findProducts, findProduct, shapeOrder, addHistory, markOrderPaid, ORDER
 import { str } from './api.js';
 import { config } from './config.js';
 import { saveImageDataUrl } from './images.js';
+import { CONCENTRATIONS, GLASS_STYLES, replaceCatalog } from './catalog.js';
 
 const int = (v, { min = 0, max = 1e9, fallback = 0 } = {}) => {
   const n = Math.round(Number(v));
@@ -125,7 +126,9 @@ export function adminRoutes() {
       price,
       discount_percent: int(b.discountPercent ?? existing.discount_percent, { min: 0, max: 90 }),
       stock: int(b.stock ?? existing.stock, { min: 0, max: 1e6 }),
+      concentration: CONCENTRATIONS.includes(b.concentration) ? b.concentration : existing.concentration || 'Eau de Parfum',
       bottle_shape: SHAPES.includes(b.bottleShape) ? b.bottleShape : existing.bottle_shape || 'classic',
+      glass_style: GLASS_STYLES.includes(b.glassStyle) ? b.glassStyle : existing.glass_style || 'clear',
       liquid_color: color(b.liquidColor, existing.liquid_color || '#d9a441'),
       cap_color: color(b.capColor, existing.cap_color || '#c9a96e'),
       image_url: b.imageUrl !== undefined ? imageUrl(b.imageUrl) : existing.image_url || '',
@@ -154,6 +157,13 @@ export function adminRoutes() {
   r.delete('/products/:id', (req, res) => {
     run('DELETE FROM products WHERE id = ?', int(req.params.id));
     res.json({ ok: true });
+  });
+
+  // Replace every product and category with the realistic starter catalog.
+  r.post('/catalog/reset', (req, res) => {
+    if (req.body.confirm !== 'REPLACE') throw new HttpError(400, 'Type REPLACE to confirm.');
+    replaceCatalog();
+    res.json({ products: one('SELECT COUNT(*) AS v FROM products').v });
   });
 
   // Bulk price update, e.g. +10% across a category.

@@ -2,11 +2,17 @@
 // a photo, a bottle render cached earlier in this session, or a simple colour swatch.
 import { safeHref } from './util.js';
 
+// Cache key for a rendered bottle "photo"; bump the version when the renderer changes.
+export function thumbKey(p) {
+  const b = p.bottle || {};
+  return `zq_thumb3:${b.shape}|${b.liquid}|${b.cap}|${b.glass || ''}|${p.concentration || ''}|${p.sizeMl || ''}|${p.name}`;
+}
+
 export function staticProductImage(p) {
   if (p.imageUrl) return safeHref(p.imageUrl);
   const b = p.bottle || {};
   try {
-    const hit = sessionStorage.getItem(`zq_thumb:${b.shape}|${b.liquid}|${b.cap}|${p.name}`);
+    const hit = sessionStorage.getItem(thumbKey(p));
     if (hit) return hit;
   } catch {
     // Ignore.

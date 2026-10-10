@@ -2,7 +2,7 @@
 import { THREE, createStage, pointer, updatePointer, reducedMotion } from './core.js';
 import { OrbitControls } from '../../vendor/three/addons/OrbitControls.js';
 import { makeBottle } from './bottle.js';
-import { makeDust, makeLightShaft, makePedestal, addStudioLights } from './fx.js';
+import { makeDust, makeLightShaft, makePedestal, addStudioLights, makeBacklight } from './fx.js';
 import { loadLogoFonts, drawLogo } from '../logo.js';
 
 const ease = (t) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
@@ -24,10 +24,11 @@ export async function heroScene(canvas, { product } = {}) {
   const pedestal = makePedestal({ radius: 1.6 });
   rig.add(pedestal);
 
-  const bottle = makeBottle(product?.bottle || { shape: 'classic', liquid: '#c9a24d', cap: '#c9a96e' }, {
+  const bottle = makeBottle(product?.bottle || { shape: 'classic', liquid: '#d9a441', cap: '#c9a96e' }, {
     quality: 'high',
     name: product?.name || 'ZAQA Signature',
-    sub: 'EXTRAIT DE PARFUM',
+    sub: product?.concentration || 'Extrait de Parfum',
+    size: `${product?.sizeMl || 100} ml`,
   });
   const bh = bottle.userData.height;
   const holder = new THREE.Group();
@@ -50,6 +51,9 @@ export async function heroScene(canvas, { product } = {}) {
   rig.add(shaft);
   const dust = makeDust({ count: 900, spread: [16, 10, 10], y: 2 });
   scene.add(dust);
+  const backlight = makeBacklight({ size: 5.5, intensity: 0.85 });
+  scene.add(backlight);
+  const bottleCentre = new THREE.Vector3();
 
   const look = new THREE.Vector3();
   const from = new THREE.Vector3(0.3, 0.7, 4.2);
@@ -89,6 +93,9 @@ export async function heroScene(canvas, { product } = {}) {
     halo.rotation.x = Math.sin(t * 0.3) * 0.12;
     shaft.userData.update(t);
     dust.userData.update(t);
+    holder.getWorldPosition(bottleCentre);
+    bottleCentre.y += bh * 0.42 * rig.scale.y;
+    backlight.userData.update(camera, bottleCentre, 3.2);
     stage.bloomPass.strength = 0.45 + intro * 0.35;
   });
   stage.start();
@@ -119,10 +126,14 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
   scene.add(floor);
 
   const items = categories.map((c, i) => {
-    const b = makeBottle(
-      { shape: SHAPES[i % SHAPES.length], liquid: c.color, cap: i % 3 === 1 ? '#1a1a1a' : '#c9a96e' },
-      { quality: 'low', name: c.name, sub: 'ZAQA' }
-    );
+    // Each category is shown by one of its real products.
+    const sample = c.sample;
+    const b = makeBottle(sample?.bottle || { shape: SHAPES[i % SHAPES.length], liquid: c.color, cap: '#c9a96e' }, {
+      quality: 'high',
+      name: sample?.name || c.name,
+      sub: sample?.concentration || 'Eau de Parfum',
+      size: `${sample?.sizeMl || 100} ml`,
+    });
     const a = (i / n) * Math.PI * 2;
     const holder = new THREE.Group();
     holder.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
@@ -130,7 +141,7 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
     holder.userData = { index: i, angle: a };
     ring.add(holder);
     const glow = new THREE.PointLight(new THREE.Color(c.color), 0, 4, 2);
-    glow.position.set(0, 1.2, 0.8);
+    glow.position.set(0, 3.2, 0.6);
     holder.add(glow);
     return { holder, bottle: b, glow };
   });
@@ -140,6 +151,9 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
   scene.add(shaft);
   const dust = makeDust({ count: 700, spread: [R * 3, 8, R * 3], y: 2.5 });
   scene.add(dust);
+  const backlight = makeBacklight({ size: 5, intensity: 0.7 });
+  scene.add(backlight);
+  const frontPos = new THREE.Vector3();
 
   let index = 0;
   let current = 0; // smoothed ring angle
@@ -205,9 +219,11 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
     current += (target - current) * Math.min(dt * 3.2, 1);
     ring.rotation.y = current;
 
-    const d = 9.5 * fit(camera, 1.6);
+    const d = 10.5 * fit(camera, 1.6);
     camera.position.set(pointer.x * 0.6, 2.4 + d * 0.12 + pointer.y * 0.3, R + d);
-    camera.lookAt(0, 0.85 - d * 0.04, R - 1);
+    camera.lookAt(0, 1.15 - d * 0.04, R - 1);
+    frontPos.set(0, 1.4 * items[index].holder.scale.y, R);
+    backlight.userData.update(camera, frontPos, 2.4);
 
     items.forEach((it, i) => {
       const active = i === index;
@@ -215,7 +231,7 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
       it.holder.scale.setScalar(s);
       it.bottle.rotation.y = -ring.rotation.y - it.holder.userData.angle + Math.sin(t * 0.7 + i) * 0.25 + (active ? t * 0.4 : 0);
       it.holder.position.y = active ? 0.15 + Math.sin(t * 1.4) * 0.06 : 0;
-      it.glow.intensity += ((active ? 6 : 0) - it.glow.intensity) * Math.min(dt * 3, 1);
+      it.glow.intensity += ((active ? 2.5 : 0) - it.glow.intensity) * Math.min(dt * 3, 1);
     });
     shaft.userData.update(t);
     dust.userData.update(t);
@@ -229,16 +245,17 @@ export async function carouselScene(canvas, categories, { onChange, onOpen } = {
 /* ------------------------------------------------------------------ */
 /* Floating bottles for page banners (shop, account)                  */
 /* ------------------------------------------------------------------ */
-export async function floatingScene(canvas, { colors = ['#c9a24d'], count = 6, names = [] } = {}) {
+export async function floatingScene(canvas, { colors = ['#c9a24d'], count = 6, names = [], products = [] } = {}) {
   await loadLogoFonts();
   const stage = createStage(canvas, { bloom: true, bloomStrength: 0.5, fov: 36, fog: { density: 0.075 }, maxDpr: 1.5 });
   const { scene, camera } = stage;
   addStudioLights(scene, { spot: false });
   const bottles = [];
   for (let i = 0; i < count; i++) {
+    const prod = products.length ? products[i % products.length] : null;
     const b = makeBottle(
-      { shape: SHAPES[(i * 2 + 1) % SHAPES.length], liquid: colors[i % colors.length], cap: i % 2 ? '#c9a96e' : '#1a1a1a' },
-      { quality: 'low', name: names[i % (names.length || 1)] || 'ZAQA' }
+      prod?.bottle || { shape: SHAPES[(i * 2 + 1) % SHAPES.length], liquid: colors[i % colors.length], cap: i % 2 ? '#c9a96e' : '#1a1a1a' },
+      { quality: 'high', name: prod?.name || names[i % (names.length || 1)] || 'ZAQA', sub: prod?.concentration, size: prod ? `${prod.sizeMl} ml` : undefined, shadow: false }
     );
     const g = new THREE.Group();
     g.add(b);
@@ -284,7 +301,7 @@ export async function productViewer(canvas, product) {
   addStudioLights(scene);
   const pedestal = makePedestal({ radius: 1.5 });
   scene.add(pedestal);
-  const bottle = makeBottle(product.bottle, { quality: 'high', name: product.name, sub: `EAU DE PARFUM · ${product.sizeMl} ML` });
+  const bottle = makeBottle(product.bottle, { quality: 'high', name: product.name, sub: product.concentration || 'Eau de Parfum', size: `${product.sizeMl} ml` });
   bottle.position.y = 0.02;
   scene.add(bottle);
   const h = bottle.userData.height;
@@ -293,6 +310,9 @@ export async function productViewer(canvas, product) {
   scene.add(shaft);
   const dust = makeDust({ count: 350, spread: [8, 6, 6], y: 2, size: 0.04 });
   scene.add(dust);
+  const backlight = makeBacklight({ size: 4.2, intensity: 0.8 });
+  scene.add(backlight);
+  const centre = new THREE.Vector3(0, h * 0.42, 0);
 
   camera.position.set(0, h * 0.75, 4.2 + h * 1.6);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -318,6 +338,7 @@ export async function productViewer(canvas, product) {
       if (camera.position.distanceTo(settle) < 0.02) settled = true;
     }
     controls.update();
+    backlight.userData.update(camera, centre, 2.6);
     shaft.userData.update(t);
     dust.userData.update(t);
   });
@@ -335,13 +356,13 @@ export async function loginScene(canvas) {
   addStudioLights(scene);
   const pedestal = makePedestal({ radius: 2.4, height: 0.3 });
   scene.add(pedestal);
-  const hero = makeBottle({ shape: 'classic', liquid: '#c9a24d', cap: '#c9a96e' }, { quality: 'high', name: 'ZAQA Signature' });
+  const hero = makeBottle({ shape: 'classic', liquid: '#d9a441', cap: '#c9a96e' }, { quality: 'high', name: 'ZAQA Signature', sub: 'Extrait de Parfum' });
   scene.add(hero);
-  const left = makeBottle({ shape: 'oud', liquid: '#3a1f10', cap: '#c9a96e' }, { quality: 'low', name: 'Oud Al Layl' });
+  const left = makeBottle({ shape: 'oud', liquid: '#5a2d0c', cap: '#c9a96e' }, { quality: 'high', name: 'Oud Al Layl', sub: 'Extrait de Parfum', size: '50 ml' });
   left.position.set(-1.45, 0, -0.9);
   left.rotation.y = 0.5;
   scene.add(left);
-  const right = makeBottle({ shape: 'round', liquid: '#e8a4b4', cap: '#d4af7a' }, { quality: 'low', name: 'Rose Éternelle' });
+  const right = makeBottle({ shape: 'round', liquid: '#f2c2c8', cap: '#d4af7a' }, { quality: 'high', name: 'Rose Éternelle' });
   right.position.set(1.4, 0, -0.7);
   right.scale.setScalar(0.85);
   right.rotation.y = -0.5;
@@ -351,6 +372,9 @@ export async function loginScene(canvas) {
   scene.add(shaft);
   const dust = makeDust({ count: 800, spread: [14, 9, 10], y: 2.5 });
   scene.add(dust);
+  const backlight = makeBacklight({ size: 7, intensity: 0.75 });
+  scene.add(backlight);
+  const centre = new THREE.Vector3(0, 1.1, -0.4);
   stage.onFrame((t, dt) => {
     updatePointer(dt);
     const a = Math.sin(t * 0.12) * 0.5 + pointer.x * 0.2;
@@ -358,6 +382,7 @@ export async function loginScene(canvas) {
     camera.position.set(Math.sin(a) * r, 2.6 + pointer.y * 0.3, Math.cos(a) * r);
     camera.lookAt(0, 1.25, 0);
     hero.rotation.y = t * 0.25;
+    backlight.userData.update(camera, centre, 3.4);
     shaft.userData.update(t);
     dust.userData.update(t);
   });

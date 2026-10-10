@@ -141,7 +141,7 @@ async function init() {
   ({ user } = await mountLayout());
   if (!user) return (location.href = '/login?next=/account');
   $('#greeting').textContent = `Welcome, ${user.name.split(' ')[0]}`;
-  if (guardWebGL()) import('../three/scenes.js').then(({ floatingScene }) => floatingScene($('#stage'), { colors: ['#c9a24d', '#e8a4b4', '#3a1f10'], count: 5 }));
+  if (guardWebGL()) import('../three/scenes.js').then(({ floatingScene }) => api('/products?featured=1').then((products) => floatingScene($('#stage'), { count: 5, products })));
   const nav = $('.account-nav');
   nav.addEventListener('click', (e) => {
     const tab = e.target.dataset.tab;

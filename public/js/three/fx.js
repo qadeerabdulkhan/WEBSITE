@@ -155,3 +155,35 @@ export function addStudioLights(scene, { warm = 0xffe2b5, rim = 0x9fb4ff, spot =
   }
   return { key, back };
 }
+
+// A soft warm light card that always sits behind the subject, facing the camera, like the lit
+// backdrop in a perfume photo shoot. It is drawn in the opaque pass with additive blending, so it
+// is invisible at its black edges yet still shows through transmissive glass and juice, making
+// the perfume glow with its real colour instead of looking black against a dark scene.
+export function makeBacklight({ size = 6, color = 'rgba(255,232,196,1)', mid = 'rgba(190,150,96,0.45)', intensity = 1 } = {}) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, 256, 256);
+  const grd = g.createRadialGradient(128, 128, 2, 128, 128, 128);
+  grd.addColorStop(0, color);
+  grd.addColorStop(0.4, mid);
+  grd.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: false, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: true, fog: false });
+  mat.color.setScalar(intensity);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size * 1.25), mat);
+  mesh.renderOrder = -10;
+  const dir = new THREE.Vector3();
+  // Keep the card behind `target` (a world position), facing the camera.
+  mesh.userData.update = (camera, target, distance = 3) => {
+    dir.copy(target).sub(camera.position).normalize();
+    mesh.position.copy(target).addScaledVector(dir, distance);
+    mesh.quaternion.copy(camera.quaternion);
+  };
+  return mesh;
+}

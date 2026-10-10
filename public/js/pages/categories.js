@@ -6,7 +6,12 @@ import { guardWebGL } from '../three/core.js';
 
 async function init() {
   mountLayout();
-  const categories = await api('/categories').catch((e) => (toast(e.message, { error: true }), []));
+  const [categories, products] = await Promise.all([api('/categories'), api('/products')]).catch((e) => (toast(e.message, { error: true }), [[], []]));
+  // Represent each category in 3D by its featured (or first) product.
+  for (const c of categories) {
+    const own = products.filter((p) => p.category?.slug === c.slug);
+    c.sample = own.find((p) => p.featured) || own[0] || null;
+  }
   setHTML($('#cat-grid'), html`${categories.map(categoryTile)}`);
   enhanceGrid($('#cat-grid'), []);
   revealOnScroll();

@@ -21,7 +21,7 @@ async function init() {
   if (guardWebGL()) {
     const colors = cat ? [cat.color, '#c9a96e', cat.color] : categories.map((c) => c.color).slice(0, 6);
     import('../three/scenes.js').then(({ floatingScene }) =>
-      floatingScene($('#stage'), { colors: colors.length ? colors : ['#c9a24d'], count: 6, names: products.map((p) => p.name) })
+      floatingScene($('#stage'), { colors: colors.length ? colors : ['#c9a24d'], count: 6, products: products.filter((p) => !p.imageUrl).slice(0, 6) })
     );
   }
 

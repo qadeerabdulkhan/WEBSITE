@@ -4,7 +4,9 @@ A cinematic 3D perfume store with customer accounts, an admin dashboard and Paki
 
 - **Storefront:** Node.js, Express and SQLite on the server; plain HTML, CSS and Three.js in the browser. There is no build step.
 - **3D on every page except cart and checkout:** the home page hero, the category carousel, the shop and account banners, the product viewer (drag to rotate), the sign-in page and the admin emblem.
-- **Procedural bottles:** each product's 3D bottle is generated from its shape, liquid colour and cap colour, so the store looks finished before you have product photos. When you upload a photo, the product page offers both a 3D view and a photo view.
+- **Realistic procedural bottles:** each product's bottle is modelled like a real flacon: a glass shell with wall thickness and a heavy base, coloured juice that refracts light, a dip tube, a crimped metal collar, brushed-metal, lacquer or crystal caps, and ink printed on the glass. You choose the shape, glass (clear, frosted, black, smoked), juice and cap colours. Product cards show studio-style renders (seamless backdrop, back light, contact shadow). When you upload a real photo, it is used instead, and the product page offers both a 3D view and a photo view.
+- **Starter catalog:** 24 fragrances with realistic notes, concentrations (Extrait, EDP, EDT, attar, body mist), sizes and Pakistani prices. On an existing store, **Admin → Products → Load sample catalog** replaces the old sample products.
+- **Responsive:** checked at 360, 768, 1024 and 1440 px wide with no sideways scrolling; product grids show two columns on phones.
 
 ## Quick start
 

@@ -20,6 +20,7 @@ export function productCard(p) {
     <div class="info">
       ${p.category ? html`<span class="cat">${p.category.name}</span>` : ''}
       <h3><a href="/product?slug=${encodeURIComponent(p.slug)}">${p.name}</a></h3>
+      <span class="spec">${p.concentration || 'Eau de Parfum'} · ${p.sizeMl} ml</span>
       ${notes ? html`<span class="notes">${notes}</span>` : ''}
       <div class="row">
         ${priceHtml(p)}

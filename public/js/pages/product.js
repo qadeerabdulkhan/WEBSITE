@@ -22,7 +22,7 @@ async function init() {
   setHTML(
     $('#info'),
     html`<p class="crumbs"><a href="/">Home</a> / ${p.category ? html`<a href="/shop?category=${encodeURIComponent(p.category.slug)}">${p.category.name}</a>` : html`<a href="/shop">Shop</a>`}</p>
-    <p class="eyebrow">${p.category?.name || 'ZAQA'} · ${p.sizeMl} ml</p>
+    <p class="eyebrow">${p.category?.name || 'ZAQA'} · ${p.concentration || 'Eau de Parfum'} · ${p.sizeMl} ml</p>
     <h1>${p.name}</h1>
     <div>${priceHtml(p)} ${off > 0 ? html`<span class="status status-paid" style="margin-left:.6rem">Save ${off}%</span>` : ''}</div>
     <p class="desc">${p.description}</p>
