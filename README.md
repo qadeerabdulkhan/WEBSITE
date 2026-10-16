@@ -25,6 +25,8 @@ On first start the database is created in `data/zaqa.db` and filled with 10 cate
 
 Run the tests with `npm test`.
 
+**Forgot the admin password?** Put a new `ADMIN_PASSWORD` (and your `ADMIN_EMAIL`) in `.env`, stop the store, run `npm run reset-admin`, then `npm start` again. Products, orders and customers are kept.
+
 ## Admin dashboard (`/admin`)
 
 | Section | What you can do |
