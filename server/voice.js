@@ -254,7 +254,54 @@ function greeting(user) {
   return `Hi ${first}, you're through to ZAQA. How can I help you today?`;
 }
 
+// Runs every tool call Claude or Groq asked for; browser actions are pushed to `actions`.
+function callTool(name, input, convo, actions) {
+  try {
+    return { content: JSON.stringify(runTool(name, input || {}, { userId: convo.userId, actions })), isError: false };
+  } catch (err) {
+    console.error('voice tool failed', name, err);
+    return { content: 'The tool failed. Apologise and suggest contacting the store.', isError: true };
+  }
+}
+
+// Groq (free tier) speaks the OpenAI chat format, so its conversation is kept in that shape.
+const GROQ_TOOLS = TOOLS.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.input_schema } }));
+
+class ProviderError extends Error {}
+
+async function replyGroq(convo) {
+  const actions = [];
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        max_tokens: 1024,
+        messages: [{ role: 'system', content: convo.system }, ...convo.messages],
+        tools: GROQ_TOOLS,
+      }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new ProviderError(`Groq ${res.status}: ${data?.error?.message || 'request failed'}`);
+    const msg = data.choices[0].message;
+    convo.messages.push({ role: 'assistant', content: msg.content || '', ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
+    if (!msg.tool_calls?.length) return { text: (msg.content || '').trim() || 'Sorry, could you say that again?', actions };
+    for (const call of msg.tool_calls) {
+      let input = {};
+      try {
+        input = JSON.parse(call.function.arguments || '{}');
+      } catch {
+        // Malformed arguments: run with none and let the tool report what's missing.
+      }
+      convo.messages.push({ role: 'tool', tool_call_id: call.id, content: callTool(call.function.name, input, convo, actions).content });
+    }
+  }
+  return { text: 'Sorry, that took longer than expected. Could you ask me again?', actions };
+}
+
 async function reply(convo) {
+  if (convo.provider === 'groq') return replyGroq(convo);
   const actions = [];
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const response = await anthropic().beta.messages.create({
@@ -280,15 +327,7 @@ async function reply(convo) {
     const results = response.content
       .filter((b) => b.type === 'tool_use')
       .map((b) => {
-        let content;
-        let isError = false;
-        try {
-          content = JSON.stringify(runTool(b.name, b.input || {}, { userId: convo.userId, actions }));
-        } catch (err) {
-          console.error('voice tool failed', b.name, err);
-          content = 'The tool failed. Apologise and suggest contacting the store.';
-          isError = true;
-        }
+        const { content, isError } = callTool(b.name, b.input, convo, actions);
         return { type: 'tool_result', tool_use_id: b.id, content, is_error: isError };
       });
     convo.messages.push({ role: 'user', content: results });
@@ -296,7 +335,10 @@ async function reply(convo) {
   return { text: "Sorry, that took longer than expected. Could you ask me again?", actions };
 }
 
-export const voiceEnabled = () => !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN) && process.env.VOICE_AGENT !== 'off';
+// Claude when an Anthropic key is set, otherwise Groq's free tier when a Groq key is set.
+const provider = () =>
+  process.env.VOICE_AGENT === 'off' ? null : process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN ? 'claude' : process.env.GROQ_API_KEY ? 'groq' : null;
+export const voiceEnabled = () => !!provider();
 
 export function voiceRoutes() {
   const r = express.Router();
@@ -315,6 +357,7 @@ export function voiceRoutes() {
     const text = greeting(user);
     conversations.set(id, {
       userId: user?.id || null,
+      provider: provider(),
       system: systemPrompt(user),
       // The API needs the conversation to start with the customer, so the call itself is the first turn.
       messages: [
@@ -346,8 +389,8 @@ export function voiceRoutes() {
     } catch (err) {
       // Drop the half-finished turn so the conversation stays valid for the next message.
       convo.messages.length = before;
-      if (err instanceof Anthropic.APIError) {
-        console.error('voice agent API error', err.status, err.message);
+      if (err instanceof Anthropic.APIError || err instanceof ProviderError || err instanceof TypeError) {
+        console.error('voice agent API error', err.status || '', err.message);
         throw new HttpError(502, 'The assistant is having trouble right now. Please try again in a moment.');
       }
       throw err;

@@ -18,7 +18,7 @@ process.env.DB_FILE = path.join(dir, 'unit.db');
 before(async () => {
   server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server/index.js'], {
     cwd: root,
-    env: { ...process.env, PORT: String(PORT), DB_FILE: path.join(dir, 'test.db'), ADMIN_PASSWORD: 'admin-pass-123', PAYMENT_MODE: 'simulate', ANTHROPIC_API_KEY: '', ANTHROPIC_AUTH_TOKEN: '' },
+    env: { ...process.env, PORT: String(PORT), DB_FILE: path.join(dir, 'test.db'), ADMIN_PASSWORD: 'admin-pass-123', PAYMENT_MODE: 'simulate', ANTHROPIC_API_KEY: '', ANTHROPIC_AUTH_TOKEN: '', GROQ_API_KEY: '' },
     stdio: 'pipe',
   });
   for (let i = 0; i < 50; i++) {

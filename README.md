@@ -58,7 +58,7 @@ A **Talk to ZAQA** button on every storefront page opens a hands-free voice call
 
 It cannot cancel, refund or change orders, and it never takes payment details by voice.
 
-**Setup:** add an Anthropic API key (from console.anthropic.com) to `.env` as `ANTHROPIC_API_KEY=...` and restart. Without a key the button is hidden. To turn it off later, set `VOICE_AGENT=off`.
+**Setup:** add an Anthropic API key (from console.anthropic.com) to `.env` as `ANTHROPIC_API_KEY=...` and restart. Without a key the button is hidden. For free testing, put a Groq key (console.groq.com) in `GROQ_API_KEY` instead; it runs an open Llama model, which is less reliable than Claude. To turn it off later, set `VOICE_AGENT=off`.
 
 Speech recognition works in Chrome, Edge and Safari; in Firefox customers type and still hear spoken replies. Each customer message costs a small amount of Claude API usage.
 
