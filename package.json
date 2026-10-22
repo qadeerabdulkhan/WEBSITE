@@ -2,7 +2,7 @@
   "name": "zaqa-fragrances",
   "version": "1.0.0",
   "private": true,
-  "description": "ZAQA \u2014 Fragrances by Zaqa. 3D perfume store with admin and customer dashboards.",
+  "description": "ZAQA — Fragrances by Zaqa. 3D perfume store with admin and customer dashboards.",
   "type": "module",
   "main": "server/index.js",
   "engines": {
@@ -15,6 +15,7 @@
     "reset-admin": "node --disable-warning=ExperimentalWarning server/reset-admin.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
     "bcryptjs": "^2.4.3",
     "express": "^4.21.2"
   }

@@ -691,3 +691,50 @@ select.input option { background: var(--bg-2); }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ---------- Voice assistant ("Talk to ZAQA") ---------- */
+#voice-agent { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: .6rem; }
+.va-fab {
+  display: inline-flex; align-items: center; gap: .55rem; padding: .8rem 1.15rem; border-radius: 999px; border: 0; cursor: pointer;
+  background: linear-gradient(135deg, var(--gold-2), var(--gold) 55%, var(--gold-deep)); color: #120f0a; font-weight: 600; font-size: .92rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+.va-fab svg { width: 20px; height: 20px; }
+.va-fab[hidden], .va-nudge[hidden], .va-panel[hidden] { display: none; }
+.va-nudge {
+  display: flex; align-items: flex-start; gap: .4rem; max-width: 260px; padding: .7rem .8rem; border-radius: 14px;
+  background: var(--bg-3); border: 1px solid var(--line-strong); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); font-size: .88rem;
+}
+.va-nudge-text { background: none; border: 0; text-align: left; cursor: pointer; color: var(--ink); }
+.va-nudge-x { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.va-panel {
+  width: min(360px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 32px)); display: flex; flex-direction: column;
+  background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden;
+}
+.va-head { display: flex; align-items: center; gap: .8rem; padding: 1rem; border-bottom: 1px solid var(--line); }
+.va-head strong { display: block; font-size: .95rem; }
+.va-state { display: block; font-size: .8rem; color: var(--muted); }
+.va-orb { width: 40px; height: 40px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 35%, var(--gold-2), var(--gold) 50%, var(--gold-deep)); }
+#voice-agent[data-mode='listening'] .va-orb { animation: va-pulse 1.4s ease-in-out infinite; }
+#voice-agent[data-mode='speaking'] .va-orb { animation: va-pulse .7s ease-in-out infinite; }
+#voice-agent[data-mode='thinking'] .va-orb { animation: va-spin 1.2s linear infinite; background: conic-gradient(var(--gold-2), var(--gold-deep), var(--gold-2)); }
+@keyframes va-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201, 169, 110, .5); } 50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(201, 169, 110, 0); } }
+@keyframes va-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #voice-agent .va-orb { animation: none !important; } }
+.va-log { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .6rem; min-height: 160px; }
+.va-msg { max-width: 85%; padding: .55rem .8rem; border-radius: 14px; font-size: .9rem; line-height: 1.45; }
+.va-agent { background: var(--surface-2); align-self: flex-start; border-bottom-left-radius: 4px; }
+.va-user { background: rgba(201, 169, 110, .18); align-self: flex-end; border-bottom-right-radius: 4px; }
+.va-system { align-self: center; color: var(--warn); font-size: .82rem; text-align: center; }
+.va-input { display: flex; gap: .5rem; padding: .6rem 1rem; border-top: 1px solid var(--line); }
+.va-input input { flex: 1; min-width: 0; padding: .55rem .8rem; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); }
+.va-controls { display: flex; gap: .5rem; padding: 0 1rem 1rem; }
+.va-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding: .5rem .75rem; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: .8rem; white-space: nowrap;
+}
+.va-btn svg { width: 18px; height: 18px; flex: none; }
+.va-btn[hidden] { display: none; }
+.va-controls .va-btn { flex: 1; }
+.va-hangup { background: rgba(229, 119, 107, .15); border-color: rgba(229, 119, 107, .5); color: var(--danger); }
+@media (max-width: 560px) { .va-fab span { display: none; } .va-fab { padding: .85rem; } }

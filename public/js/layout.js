@@ -3,6 +3,7 @@ import { html, setHTML, raw, $, safeHref } from './util.js';
 import { site, me, logout } from './api.js';
 import { cart } from './cart.js';
 import { logoSvg } from './logo.js';
+import { mountVoiceAgent } from './voice.js';
 
 const ICONS = {
   bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
@@ -75,6 +76,7 @@ export async function mountLayout({ solidHeader = false } = {}) {
     bar.hidden = false;
   }
   mountFooter(data, user);
+  mountVoiceAgent();
   return { site: data, user };
 }
 

@@ -46,6 +46,22 @@ Run the tests with `npm test`.
 
 Customers can follow each order on a live status timeline (Placed → Paid → Shipped → Delivered) and see its tracking number. They can also pay or cancel an unpaid order, edit their profile and saved address, change their password, and sign out.
 
+## Voice assistant ("Talk to ZAQA")
+
+A **Talk to ZAQA** button on every storefront page opens a hands-free voice call with an AI shop assistant (Claude). The customer speaks; the assistant answers out loud and keeps listening until they press **End**. Customers can also type.
+
+- **Answers questions:** recommends fragrances and gives prices, notes, sizes, stock, delivery fees and payment methods, all looked up live from your catalog and settings.
+- **Order status:** tells a signed-in customer where their orders are, including tracking numbers.
+- **Unpaid orders:** if a customer has an unpaid order from the last 7 days, the button shows a reminder and the assistant opens the call by offering to help them pay. It can take them to the payment page.
+- **Order confirmation:** after a new order is paid, the assistant offers to read back the items and delivery address. When the customer says yes, a "confirmed by customer" note is added to the order's timeline (visible in Admin → Orders).
+- **Cart and pages:** it can add products to the cart and open product, cart, checkout and account pages.
+
+It cannot cancel, refund or change orders, and it never takes payment details by voice.
+
+**Setup:** add an Anthropic API key (from console.anthropic.com) to `.env` as `ANTHROPIC_API_KEY=...` and restart. Without a key the button is hidden. To turn it off later, set `VOICE_AGENT=off`.
+
+Speech recognition works in Chrome, Edge and Safari; in Firefox customers type and still hear spoken replies. Each customer message costs a small amount of Claude API usage.
+
 ## Payments
 
 All four methods use the provider's own **hosted payment page**, so card numbers and wallet PINs never touch this server. An order is marked paid only after the server has verified the provider's response.

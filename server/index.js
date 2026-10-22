@@ -7,6 +7,7 @@ import { apiRoutes } from './api.js';
 import { adminRoutes } from './admin.js';
 import { paymentRoutes } from './payments.js';
 import { settings } from './shop.js';
+import { voiceRoutes } from './voice.js';
 
 seed();
 
@@ -25,7 +26,7 @@ app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
   if (config.production) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader(
     'Content-Security-Policy',
@@ -89,6 +90,7 @@ function catchAsync(router) {
 }
 
 app.use('/api/admin', catchAsync(adminRoutes()));
+app.use('/api/voice', catchAsync(voiceRoutes()));
 app.use('/api', catchAsync(apiRoutes()));
 app.use(catchAsync(paymentRoutes()));
 

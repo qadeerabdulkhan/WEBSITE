@@ -18,7 +18,7 @@ process.env.DB_FILE = path.join(dir, 'unit.db');
 before(async () => {
   server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server/index.js'], {
     cwd: root,
-    env: { ...process.env, PORT: String(PORT), DB_FILE: path.join(dir, 'test.db'), ADMIN_PASSWORD: 'admin-pass-123', PAYMENT_MODE: 'simulate' },
+    env: { ...process.env, PORT: String(PORT), DB_FILE: path.join(dir, 'test.db'), ADMIN_PASSWORD: 'admin-pass-123', PAYMENT_MODE: 'simulate', ANTHROPIC_API_KEY: '', ANTHROPIC_AUTH_TOKEN: '' },
     stdio: 'pipe',
   });
   for (let i = 0; i < 50; i++) {
@@ -230,4 +230,56 @@ test('manual transfer: own accounts, TID + screenshot, admin confirms', async ()
   assert.equal(paid.data.paymentRef, '12345678');
 
   await admin('PUT', '/api/admin/content', { manualPayment: { enabled: false } });
+});
+
+test('voice assistant stays hidden without an API key', async () => {
+  const c = client();
+  await c('POST', '/api/auth/register', { name: 'Voice Guest', identifier: 'voice@x.pk', password: 'longenough' });
+  const status = await c('GET', '/api/voice/status');
+  assert.equal(status.status, 200);
+  assert.equal(status.data.enabled, false);
+  assert.equal((await c('POST', '/api/voice/start', {})).status, 503);
+});
+
+test('voice assistant tools only touch the caller\'s own orders', async () => {
+  const { seed } = await import('../server/seed.js');
+  const { runTool, followUps } = await import('../server/voice.js');
+  const { run, one } = await import('../server/db.js');
+  seed();
+  const actions = [];
+  const found = runTool('search_products', { query: 'oud' }, { userId: null, actions });
+  assert.ok(found.results.length > 0);
+  assert.ok(found.results.every((p) => typeof p.price === 'number'));
+  assert.equal(runTool('store_info', {}, { userId: null, actions }).cashOnDelivery, false);
+  assert.match(runTool('get_my_orders', {}, { userId: null, actions }).error, /not signed in/);
+
+  const owner = Number(run("INSERT INTO users (name, email, password_hash) VALUES ('Owner', 'owner@x.pk', 'x')").lastInsertRowid);
+  const other = Number(run("INSERT INTO users (name, email, password_hash) VALUES ('Other', 'other@x.pk', 'x')").lastInsertRowid);
+  const insert = (ref, status, paymentStatus) =>
+    run(
+      `INSERT INTO orders (ref, user_id, items, subtotal, total, status, payment_method, payment_status, shipping_address, history)
+       VALUES (?, ?, '[{"name":"Test","qty":1,"sizeMl":50}]', 1000, 1000, ?, 'jazzcash', ?, '{"fullName":"Owner","line1":"1 Road","city":"Lahore","phone":"+923001112233"}', '[]')`,
+      ref, owner, status, paymentStatus
+    );
+  insert('ZQVOICEPAID', 'paid', 'paid');
+  insert('ZQVOICEUNPD', 'pending_payment', 'unpaid');
+
+  const f = followUps(owner);
+  assert.deepEqual(f.unpaid.map((o) => o.ref), ['ZQVOICEUNPD']);
+  assert.deepEqual(f.toConfirm.map((o) => o.ref), ['ZQVOICEPAID']);
+
+  // Another customer can't confirm, pay or read this order.
+  assert.ok(runTool('confirm_order', { ref: 'ZQVOICEPAID' }, { userId: other, actions }).error);
+  assert.ok(runTool('open_page', { page: 'pay_order', ref: 'ZQVOICEUNPD' }, { userId: other, actions }).error);
+  assert.deepEqual(runTool('get_my_orders', {}, { userId: other, actions }), []);
+
+  assert.equal(runTool('confirm_order', { ref: 'zqvoicepaid' }, { userId: owner, actions }).ok, true);
+  assert.equal(followUps(owner).toConfirm.length, 0);
+  runTool('confirm_order', { ref: 'ZQVOICEPAID' }, { userId: owner, actions });
+  assert.equal(JSON.parse(one("SELECT history FROM orders WHERE ref = 'ZQVOICEPAID'").history).length, 1);
+
+  assert.ok(runTool('open_page', { page: 'pay_order', ref: 'ZQVOICEPAID' }, { userId: owner, actions }).error);
+  runTool('open_page', { page: 'cart' }, { userId: owner, actions });
+  runTool('open_page', { page: 'pay_order', ref: 'ZQVOICEUNPD' }, { userId: owner, actions });
+  assert.deepEqual(actions, [{ type: 'navigate', href: '/pay/ZQVOICEUNPD/start' }]);
 });
